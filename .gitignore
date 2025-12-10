@@ -141,7 +141,7 @@ uploads/
 __pycache__/
 chroma_db/
 chat.db
-compact_literature_rewiew
+compact_literature_review.txt
 irrelevant_files.json
 relevant_texts.json
 vector_db_info.json
