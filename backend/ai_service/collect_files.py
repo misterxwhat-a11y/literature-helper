@@ -92,12 +92,12 @@ def assess_relevance(topic: str, summary: str) -> int:
         print(f"Ошибка оценки релевантности: {e}")
         return 0
 
-# --- ОСНОВНАЯ ЛОГИКА ---
 def process_pdfs(folder_path: str, research_topic: str, actual_files) -> Tuple[Dict[int, str], List[int]]:
     """
-    Обрабатывает все PDF в папке, возвращает:
+    Обрабатывает все PDF в папке:
     - relevant_texts: словарь {номер_файла: полный_текст}
     - irrelevant_files: список номеров нерелевантных файлов
+    - actual_files: список из актуальных для определенного чата файлов
     """
     # Получаем список PDF файлов
     pdf_files_s = [f for f in os.listdir(folder_path) if f.lower().endswith('.pdf')]
@@ -132,8 +132,8 @@ def process_pdfs(folder_path: str, research_topic: str, actual_files) -> Tuple[D
         score = assess_relevance(research_topic, summary)
         print(f"  Оценка релевантности: {score}/10")
         
-        # 4. Фильтруем (порог = 7)
-        if score >= 7:
+        # 4. Фильтруем (порог = 6)
+        if score >= 6:
             relevant_texts[idx] = text
             print(f"  ✓ Сохранен как релевантный")
         else:
@@ -144,6 +144,10 @@ def process_pdfs(folder_path: str, research_topic: str, actual_files) -> Tuple[D
 
 
 def initial_analyzis(RESEARCH_TOPIC, actual_files):
+    """
+    - RESEARCH_TOPIC: тема исследования пользователя
+    - actual_files: список из актуальных для определенного чата файлов
+    """
     relevant, irrelevant = process_pdfs(PDF_FOLDER, RESEARCH_TOPIC, actual_files)
 
     with open('relevant_texts.json', 'w', encoding='utf-8') as f:

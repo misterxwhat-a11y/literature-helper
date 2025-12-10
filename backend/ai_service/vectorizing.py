@@ -1,15 +1,11 @@
 import json
 from sentence_transformers import SentenceTransformer
 import chromadb
-from chromadb.config import Settings
-from typing import Dict, List, Tuple
-import hashlib
-import re
+from typing import Dict, List
 
-# --- КОНФИГУРАЦИЯ ---
 CHUNK_SIZE = 700  # символов на чанк
 CHUNK_OVERLAP = 100  # перекрытие между чанками
-EMBEDDING_MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"  # хорошая для русского/английского
+EMBEDDING_MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2" 
 
 def split_into_chunks(text: str, source_id: int) -> List[Dict]:
     """
@@ -166,7 +162,7 @@ def search_similar_chunks(collection: chromadb.Collection, query: str, n_results
 
 def initial_vectorizing():
     print("=" * 50)
-    print("ЭТАП 3: Подготовка RAG базы знаний")
+    print("Подготовка RAG базы знаний")
     print("=" * 50)
     
     # Загружаем данные из предыдущих этапов
@@ -177,14 +173,13 @@ def initial_vectorizing():
         relevant_texts = {int(k): v for k, v in relevant_texts.items()}
     except FileNotFoundError:
         print("Ошибка: файл relevant_texts.json не найден!")
-        print("Сначала выполните Этапы 1-2")
         return
     
     print(f"Загружено {len(relevant_texts)} релевантных источников")
     print(f"Номера источников: {list(relevant_texts.keys())}")
     
     # Создаем векторную базу
-    collection = create_vector_db(relevant_texts)
+    create_vector_db(relevant_texts)
     
     # Сохраняем информацию о коллекции
     collection_info = {
@@ -199,22 +194,7 @@ def initial_vectorizing():
     with open('vector_db_info.json', 'w', encoding='utf-8') as f:
         json.dump(collection_info, f, indent=2, ensure_ascii=False)
     
-    # print("\nТест поиска (опционально)...")
-    # test_query = "методология исследования"
-    # test_results = search_similar_chunks(collection, test_query, n_results=3)
-    
-    # if test_results:
-    #     print(f"Тестовый запрос: '{test_query}'")
-    #     for i, result in enumerate(test_results, 1):
-    #         print(f"\nРезультат {i}:")
-    #         print(f"  Источник: #{result['source_id']} (стр.~{result['approx_page']})")
-    #         print(f"  Сходство: {result['similarity_score']:.3f}")
-    #         print(f"  Текст: {result['text'][:150]}...")
-    # else:
-    #     print("Тестовый поиск не дал результатов")
-    
     print("\n" + "=" * 50)
-    print("Этап 3 завершен!")
     print(f"Векторная база сохранена в папке: ./chroma_db/")
     print(f"Информация о базе: vector_db_info.json")
 

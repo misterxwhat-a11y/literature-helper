@@ -8,20 +8,16 @@ import uuid
 from datetime import datetime
 from . import models
 from .database import engine, get_db
-import time
-from typing import Dict, List
 import asyncio
-import json
 from ai_service.collect_files import initial_analyzis
 from ai_service.vectorizing import initial_vectorizing
 from ai_service.generating import initital_generating, rewrite_review_with_instruction
 
 from concurrent.futures import ThreadPoolExecutor
 
-
-
 # Создаем таблицы
 models.Base.metadata.create_all(bind=engine)
+
 class ConnectionManager:
     def __init__(self):
         # Простой словарь для хранения соединений
@@ -67,7 +63,7 @@ app = FastAPI(title="Chat API", version="1.0.0")
 # Настройка CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],  # Адрес вашего фронтенда
+    allow_origins=["http://localhost:5173", "http://localhost:3000"],  # Адреса фронта
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -154,8 +150,6 @@ def get_chat(chat_id: int, db: Session = Depends(get_db)):
     if not chat:
         raise HTTPException(status_code=404, detail="Чат не найден")
     
-    #time.sleep(10)
-    
     return chat
 
 @app.post("/api/chats/{chat_id}/messages", response_model=MessageResponse)
@@ -199,7 +193,7 @@ async def create_message(
         # Файлы не менялись, работаем только с сообщением
     else:
         print("Списки файлов не совпадают - обновляем")
-        # 3.1 Удаляем старые файлы
+        # Удаляем старые файлы
         for db_file in current_db_files:
             # Удаляем файл с диска
             if os.path.exists(db_file.file_path):
@@ -249,13 +243,12 @@ async def create_message(
         print(123123)
         current_dir = os.path.dirname(os.path.abspath(__file__))
         parent_dir = os.path.dirname(current_dir)
-        file_path = os.path.join(parent_dir, "compact_literature_review.txt")
+        file_path = os.path.join(parent_dir, "literature_review.txt")
 
         with open(file_path, 'r', encoding='utf-8') as f:
             text = f.read()
 
         if client_id:
-        # Создаем финальное сообщение с результатом
             final_message = models.Message(
                 chat_id=chat_id,
                 content=f"Вы выбрали уточнение запроса",
@@ -278,26 +271,22 @@ async def create_message(
             }, client_id)
 
         try:
-            # Если функция синхронная (не async), запускаем в thread pool
-            
-            # Создаем пул потоков
             with ThreadPoolExecutor() as executor:
                 # Запускаем анализ в отдельном потоке
                 analysis_future = executor.submit(
-                    rewrite_review_with_instruction,  # ваша функция
-                    text,           # сообщение пользователя
-                    message       # список имен файлов
+                    rewrite_review_with_instruction,
+                    text,           
+                    message      
                 )
                 
                 # Ждем завершения (блокируем, но в отдельном потоке)
-                analysis_result = analysis_future.result(timeout=120)  # таймаут 120 секунд
+                analysis_result = analysis_future.result(timeout=120) 
                 
         except Exception as e:
             # Если ошибка при анализе
             analysis_result = f"❌ Ошибка при анализе: {str(e)}"
 
         if client_id:
-        # Создаем финальное сообщение с результатом
             final_message = models.Message(
                 chat_id=chat_id,
                 content=f"{analysis_result}",
@@ -320,13 +309,8 @@ async def create_message(
             }, client_id)
 
         await manager.broadcast({"type": "chats_updated"})
-    
-    # Возвращаем сообщение пользователя (можно вернуть и AI сообщение)
         return user_message
 
-        
-    
-    # Генерируем ответ от AI (заглушка)
     ai_response = f"Ваша тема исследования: '{message}'. Файлов загружено: {len(files)}"
     
     ai_message = models.Message(
@@ -358,21 +342,8 @@ async def create_message(
             "chat_id": chat_id
         }, client_id)
     
-    # 3. Имитируем обработку (в реальности здесь будет работа с нейросетью)
     if client_id:
-        await asyncio.sleep(1)  # 2 секунды задержки
-        
-        # 4. Сохраняем и отправляем ответ AI
-        # ai_response = f"Ответ на: '{message}'. Файлов: {len(saved_files)}"
-        # ai_message = models.Message(
-        #     chat_id=chat_id,
-        #     content=ai_response,
-        #     role="assistant",
-        #     created_at=datetime.utcnow()
-        # )
-        # db.add(ai_message)
-        # db.commit()
-        # db.refresh(ai_message)
+        await asyncio.sleep(1)
         
         await manager.send_personal_message({
             "type": "message",
@@ -393,21 +364,17 @@ async def create_message(
     print(db_filenames)
 
     if not same_lists_flag:
-        #analyz_result = initial_analyzis(message, db_filenames)
         try:
-            # Если функция синхронная (не async), запускаем в thread pool
-            
-            # Создаем пул потоков
             with ThreadPoolExecutor() as executor:
                 # Запускаем анализ в отдельном потоке
                 analysis_future = executor.submit(
-                    initial_analyzis,  # ваша функция
-                    message,           # сообщение пользователя
-                    db_filenames       # список имен файлов
+                    initial_analyzis, 
+                    message,           
+                    db_filenames       
                 )
                 
                 # Ждем завершения (блокируем, но в отдельном потоке)
-                analysis_result = analysis_future.result(timeout=120)  # таймаут 120 секунд
+                analysis_result = analysis_future.result(timeout=120)
                 
         except Exception as e:
             # Если ошибка при анализе
@@ -416,9 +383,7 @@ async def create_message(
     else:
         analysis_result = "Список файлов не был изменен, повторный анализ на релевантность не требуется"
 
-    # 5. Отправляем результат анализа
     if client_id:
-        # Создаем финальное сообщение с результатом
         final_message = models.Message(
             chat_id=chat_id,
             content=f"{analysis_result}",
@@ -441,11 +406,8 @@ async def create_message(
         }, client_id)
 
     if not same_lists_flag:
-        #analyz_result = initial_analyzis(message, db_filenames)
         try:
-            # Если функция синхронная (не async), запускаем в thread pool
-            
-            # Создаем пул потоков
+
             with ThreadPoolExecutor() as executor:
                 # Запускаем анализ в отдельном потоке
                 analysis_future = executor.submit(
@@ -453,7 +415,7 @@ async def create_message(
                 )
                 
                 # Ждем завершения (блокируем, но в отдельном потоке)
-                analysis_result = analysis_future.result(timeout=120)  # таймаут 120 секунд
+                analysis_result = analysis_future.result(timeout=120)
                 
         except Exception as e:
             # Если ошибка при анализе
@@ -463,7 +425,7 @@ async def create_message(
         analysis_result = "Повторная векторизация не требуется"
 
     if client_id:
-        # Создаем финальное сообщение с результатом
+
         final_message = models.Message(
             chat_id=chat_id,
             content=f"{analysis_result}",
@@ -486,9 +448,7 @@ async def create_message(
         }, client_id)
 
     try:
-        # Если функция синхронная (не async), запускаем в thread pool
-        
-        # Создаем пул потоков
+
         with ThreadPoolExecutor() as executor:
             # Запускаем анализ в отдельном потоке
             analysis_future = executor.submit(
@@ -498,14 +458,13 @@ async def create_message(
             )
             
             # Ждем завершения (блокируем, но в отдельном потоке)
-            analysis_result = analysis_future.result(timeout=180)  # таймаут 180 секунд
+            analysis_result = analysis_future.result(timeout=180) 
             
     except Exception as e:
         # Если ошибка при анализе
         analysis_result = f"❌ Ошибка при генерации обзора: {str(e)}"
 
     if client_id:
-        # Создаем финальное сообщение с результатом
         final_message = models.Message(
             chat_id=chat_id,
             content=f"{analysis_result}",
@@ -531,7 +490,6 @@ async def create_message(
     # 5. Обновляем список чатов
     await manager.broadcast({"type": "chats_updated"})
     
-    # Возвращаем сообщение пользователя (можно вернуть и AI сообщение)
     return user_message
 
 @app.delete("/api/chats/{chat_id}")
@@ -552,10 +510,9 @@ def delete_chat(chat_id: int, db: Session = Depends(get_db)):
     
     return {"message": "Чат удален"}
 
-# В main.py добавьте:
 @app.websocket("/ws/{client_id}")
 async def websocket_endpoint(websocket: WebSocket, client_id: str):
-    """Простой WebSocket endpoint который работает"""
+    """Простой WebSocket endpoint"""
     # 1. Принимаем соединение
     await websocket.accept()
     print(f"✅ WebSocket подключен: {client_id}")
@@ -564,7 +521,7 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
     manager.active_connections[client_id] = websocket
     print(f"📊 Активных соединений: {len(manager.active_connections)}")
     
-    # 3. Немедленно отправляем подтверждение подключения
+    # 3. Отправляем подтверждение подключения
     await websocket.send_json({
         "type": "connected",
         "message": f"Вы подключены как {client_id}",

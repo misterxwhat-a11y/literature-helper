@@ -10,12 +10,12 @@ client = OpenAI(api_key=cn.DEEPSEEK_API_KEY, base_url="https://openrouter.ai/api
 
 def extract_citations(text: str) -> List[Tuple[int, int]]:
     """
-    Извлекает все цитирования из текста в формате [#X, p.~Y].
+    Извлекает все цитирования из текста в формате [X, p. Y].
     Возвращает список кортежей (source_id, approx_page).
     """
     citations = []
     
-    # Ищем паттерны типа [#1, p.~5] или [p.~5, #1]
+    # Ищем паттерны типа [X, p. Y]
     patterns = [
         r'\[#(\d+),\s*p\.~(\d+)\]',
         r'\[p\.~(\d+),\s*#(\d+)\]',
@@ -85,7 +85,7 @@ def call_deepseek(prompt: str, max_tokens: int = 2000, temperature: float = 1.0)
 
 def generate_compact_review(RESEARCH_TOPIC) -> Tuple[str, List[int], List[int]]:
     """
-    Генерирует компактный аналитический обзор (500-600 слов) без явных разделов.
+    Генерирует компактный аналитический обзор без явных разделов.
     """
     print("=" * 50)
     print("Генерация компактного литературного обзора (500-600 слов)")
@@ -182,15 +182,15 @@ def generate_compact_review(RESEARCH_TOPIC) -> Tuple[str, List[int], List[int]]:
     print(f"- Использовано источников: {len(used_source_ids)}")
     print(f"- Не использовано: {len(unused_sources)}")
     
-    return review_text, used_source_ids, unused_sources, prompt
+    return review_text, used_source_ids, unused_sources
 
 
 def generate_full_review(RESEARCH_TOPIC) -> Tuple[str, List[int], List[int]]:
     """
-    Генерирует полный аналитический обзор (~2000 слов) без явных разделов.
+    Генерирует полный аналитический обзор без явных разделов.
     """
     print("=" * 50)
-    print("Генерация полного литературного обзора (~2000 слов)")
+    print("Генерация полного литературного обзора (800-1200 слов)")
     print("=" * 50)
     
     # 1. Сначала собираем ключевую информацию из источников
@@ -283,93 +283,54 @@ def generate_full_review(RESEARCH_TOPIC) -> Tuple[str, List[int], List[int]]:
     print(f"- Использовано источников: {len(used_source_ids)}")
     print(f"- Не использовано: {len(unused_sources)}")
     
-    return review_text, used_source_ids, unused_sources, prompt
+    return review_text, used_source_ids, unused_sources
 
-def save_compact_results(review_text: str, used_sources: List[int], unused_sources: List[int]):
+def save_results(review_text: str, used_sources: List[int], unused_sources: List[int]):
     """
-    Сохраняет компактный обзор и информацию.
+    Сохраняет обзор и информацию.
     """
     print("\n" + "=" * 50)
     print("Сохранение результатов")
     print("=" * 50)
     
     # 1. Сохраняем компактный обзор
-    review_filename = "compact_literature_review.txt"
+    review_filename = "literature_review.txt"
     
     # Добавляем заголовок и статистику
     word_count = len(review_text.split())
     #char_count = len(review_text)
     
-    final_text = f"""
-
-{review_text}
-"""
+    final_text = f"{review_text}"
     
     with open(review_filename, 'w', encoding='utf-8') as f:
         f.write(final_text)
     
-    print(f"✓ Компактный обзор сохранен в: {review_filename}")
-    print(f"✓ Объем: ~{word_count} слов")
-    
-    # 2. Сохраняем список источников (упрощенный)
-    #sources_filename = "compact_sources_list.txt"
-    
-    # with open(sources_filename, 'w', encoding='utf-8') as f:
-    #     f.write(f"КОМПАКТНЫЙ ОБЗОР: {RESEARCH_TOPIC}\n")
-    #     f.write("="*50 + "\n\n")
-        
-    #     f.write("ИСПОЛЬЗОВАННЫЕ ИСТОЧНИКИ (цитируются в тексте):\n")
-    #     f.write(f"Всего: {len(used_sources)}\n")
-    #     f.write(f"Номера: {', '.join(map(str, used_sources)) if used_sources else 'нет'}\n\n")
-        
-    #     f.write("ОТФИЛЬТРОВАННЫЕ ИСТОЧНИКИ (не использованы):\n")
-    #     f.write(f"Всего: {len(unused_sources)}\n")
-    #     f.write(f"Номера: {', '.join(map(str, unused_sources)) if unused_sources else 'нет'}\n\n")
-        
-    #     f.write("ПОЯСНЕНИЕ:\n")
-    #     f.write("- Источники фильтруются по релевантности теме исследования\n")
-    #     f.write("- В обзор включаются только наиболее релевантные источники\n")
-    #     f.write("- Полные тексты всех PDF-файлов сохраняются в relevant_texts.json\n")
-    
-    #print(f"✓ Список источников сохранен в: {sources_filename}")
+    print(f"Обзор сохранен в: {review_filename}")
+    print(f"Объем: ~{word_count} слов")
+
 
 def initital_generating(RESEARCH_TOPIC, mode):
     """
     Главная функция для генерации компактного обзора.
     """
-    print("Запуск генерации КОМПАКТНОГО\ПОЛНОГО литературного обзора (до 1000 слов или до 2000 слов)")
+    print("Запуск генерации КОМПАКТНОГО\ПОЛНОГО литературного обзора")
     print(f"Тема: {RESEARCH_TOPIC}")
-    print("\nТребования к обзору:")
-    print("1. Выделение ключевых теорий и методологий")
-    print("2. Анализ научных дискуссий")
-    print("3. Хронология развития темы")
-    print("4. Сравнение подходов и обоснование научного пробела")
-    print("5. Единый связный текст без разделов")
     
-    # Генерация компактного обзора
+    # Генерация обзоров по режимам
     if mode != 'full':
-        review_text, used_sources, unused_sources, this_propmt = generate_compact_review(RESEARCH_TOPIC)
+        review_text, used_sources, unused_sources = generate_compact_review(RESEARCH_TOPIC)
     else:
-        review_text = generate_full_review(RESEARCH_TOPIC)
+        used_sources, unused_sources, review_text = generate_full_review(RESEARCH_TOPIC)
     
     if not review_text or len(review_text) < 300:
         print("\nОШИБКА: не удалось сгенерировать обзор!")
         return
     
-    # Проверяем длину (примерно 1000 слов)
-    # word_count = len(review_text.split())
-    # if word_count > 1500:
-    #     print(f"\nВНИМАНИЕ: обзор слишком длинный ({word_count} слов). Сокращаю...")
-    #     # Простое сокращение через LLM
-    #     shorten_prompt = f"Сократи этот текст до 800-1000 слов, сохраняя все ключевые аналитические моменты:\n\n{review_text}"
-    #     review_text = call_deepseek(shorten_prompt, max_tokens=2000)
-    #     print(f"Сокращено до ~{len(review_text.split())} слов")
-    
     # Сохранение результатов
-    save_compact_results(review_text, used_sources, unused_sources)
+    save_results(review_text, used_sources, unused_sources)
     
     print("\n" + "=" * 50)
-    print("ГЕНЕРАЦИЯ КОМПАКТНОГО ОБЗОРА ЗАВЕРШЕНА!")
+    print("ГЕНЕРАЦИЯ ОБЗОРА ЗАВЕРШЕНА!")
     print("=" * 50)
 
     return review_text
@@ -408,18 +369,5 @@ def rewrite_review_with_instruction(original_review: str,
 ПЕРЕРАБОТАННЫЙ ОБЗОР:'''
     
     new_review = call_deepseek(rewrite_prompt, max_tokens=2000)
-    
-    # Проверяем, что все оригинальные источники сохранились
-    original_citations = extract_citations(original_review)
-    new_citations = extract_citations(new_review)
-    
-    original_source_ids = set([c[0] for c in original_citations])
-    new_source_ids = set([c[0] for c in new_citations])
-    
-    # Если потеряли источники - просим добавить
-    if original_source_ids - new_source_ids:
-        print(f"Внимание: потеряны ссылки на источники {original_source_ids - new_source_ids}")
-        fix_prompt = f"{rewrite_prompt}\n\nДОБАВЬ ссылки на источники {original_source_ids - new_source_ids} где это уместно."
-        new_review = call_deepseek(fix_prompt, max_tokens=3000)
     
     return new_review
