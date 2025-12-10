@@ -134,3 +134,15 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# my files\directs
+
+uploads/
+__pycache__/
+chroma_db/
+chat.db
+compact_literature_rewiew
+irrelevant_files.json
+relevant_texts.json
+vector_db_info.json
+config.py
